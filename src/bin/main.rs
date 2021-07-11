@@ -21,7 +21,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         send.write_all(b"test").await.unwrap();
 
-        let mut buffer = vec![];
+        let mut buffer = Vec::with_capacity(10);
         loop {
             match recv.read(&mut buffer).await {
                 Ok(Some(received)) => {
@@ -39,7 +39,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                 }
                 Ok(None) => {
-                    println!("[server] no data received");
+                    // println!("[server] no data received");
                 }
                 Err(ReadError::ConnectionClosed(_)) => { 
                     println!("connection closed");
@@ -78,15 +78,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     send.finish().await?;
 
     let mut buffer = vec![];
-    if let Ok(Some(received)) = recv.read(&mut buffer).await {
-        println!("[client] received {} bytes", received);
-        println!("[client] received message {}", std::str::from_utf8(&buffer)?);
+    if let Ok(recv_op) = recv.read(&mut buffer).await {
+        if let Some(received) = recv_op {
+            println!("[client] received {} bytes", received);
+            println!("[client] received message {}", std::str::from_utf8(&buffer)?);
+        } else {
+            println!("[client] unable to receive message");
+        }
     } else {
         eprintln!("[client] unable to receive message from server")
     }
-    if let Ok(Some(received)) = recv.read(&mut buffer).await {
-        println!("[client] received {} bytes", received);
-        println!("[client] received message {}", std::str::from_utf8(&buffer)?);
+    if let Ok(recv_op) = recv.read(&mut buffer).await {
+        if let Some(received) = recv_op {
+            println!("[client] received {} bytes", received);
+            println!("[client] received message {}", std::str::from_utf8(&buffer)?);
+        } else {
+            println!("[client] unable to receive message");
+        }
     }
     else {
         eprintln!("[client] unable to receive message from server")
