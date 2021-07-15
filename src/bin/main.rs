@@ -19,19 +19,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         
         let (mut send, mut recv) = new_conn.bi_streams.next().await.unwrap().unwrap();
 
-        send.write_all(b"test").await.unwrap();
-
-        let mut buffer = Vec::with_capacity(10);
+        let mut buffer = (0..16).collect::<Vec<_>>();
         loop {
             match recv.read(&mut buffer).await {
                 Ok(Some(received)) => {
                     println!("[server] received {} bytes", received);
-                    match &buffer[..] {
-                        b"ping" => {
+                    let message = String::from_utf8_lossy(&buffer[..received]);
+                    match &message[..] {
+                        "ping" => {
                             println!("[server] received \"ping\" sending \"pong\"");
                             send.write_all(b"pong").await.unwrap();
                         }
-                        b"marco" => {
+                        "marco" => {
                             println!("[server] received \"marco\" sending \"polo\"");
                             send.write_all(b"polo").await.unwrap();
                         }
@@ -73,11 +72,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("[client] sending \"ping\"");
     send.write_all(b"ping").await?;
+    // send.poll_finish(cx)
     println!("[client] sending \"marco\"");
     send.write_all(b"marco").await?;
     send.finish().await?;
 
-    let mut buffer = vec![];
+    let mut buffer = (0..16).collect::<Vec<_>>();
     if let Ok(recv_op) = recv.read(&mut buffer).await {
         if let Some(received) = recv_op {
             println!("[client] received {} bytes", received);
